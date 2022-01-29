@@ -11,7 +11,7 @@ def main():
     # do stuff
     markets = ex1.fetch_markets()
     #length = len(markets)
-    length=50
+    length=50 # be nice to api
 
 
     for i in range(length):
