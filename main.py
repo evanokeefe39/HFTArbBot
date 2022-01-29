@@ -1,13 +1,15 @@
+from typing import Tuple
 import ccxt
 import pprint as pp
 import networkx as nx
+import pandas as pd
 
 def main():
 # setup
     ex1 = ccxt.binance()
     G = nx.MultiDiGraph()
-
-
+    df = pd.DataFrame(columns=["profit", "path"])
+    
     # do stuff
     markets = ex1.fetch_markets()
     #length = len(markets)
@@ -48,7 +50,9 @@ def main():
         if len(g)<=2: #don't want to buy and sell spread of 1 market
             continue
         
-        (m, r, actions) = evaluate_cycle_oppurtunity(G, g)
+        rebased = rebase_cycle(g, ["USDT", "BTC", "ETH", "BNB"])
+        
+        (m, r, actions) = evaluate_cycle_oppurtunity(G, rebased)
         
         ppGain = 100*(m-1) # % gains
         formatted_ppGain = "{:.2f}".format(ppGain)
@@ -60,10 +64,11 @@ def main():
         
     
     
-def evaluate_cycle_oppurtunity(G, cycle):
+def evaluate_cycle_oppurtunity(G: nx.MultiDiGraph, cycle: list) -> Tuple[float, bool, str]:
     l = len(cycle)
     cumMultiple = 1
     actions = []
+    
     for i in range(l):
         ii = (i+1)%l
         u=cycle[i]
@@ -75,9 +80,9 @@ def evaluate_cycle_oppurtunity(G, cycle):
         bidask = edgeData["bidask"]
         cumMultiple *= weight
         if action=="buy":
-            actions.append(f"Have {u} -> buy {v} @ {bidask} [cumulative multiple: {cumMultiple}]\n")
+            actions.append(f"Have {u} -> buy {v} @ {bidask} [balance: {cumMultiple} {v}]\n")
         if action=="sell":
-            actions.append(f"Have {u} -> sell {u} @ {bidask} to get {v} [cumulative multiple: {cumMultiple}]\n")
+            actions.append(f"Have {u} -> sell {u} @ {bidask} to get {v} [balance: {cumMultiple} {v}]\n")
         
         #pp.pprint(edgeData)
     
@@ -85,6 +90,24 @@ def evaluate_cycle_oppurtunity(G, cycle):
         return cumMultiple, True, ''.join(actions)
     return cumMultiple, False, ""     
         
+def rebase_cycle(cycle: list, preferred_assets: list) -> list:
+    r=""
+    
+    if cycle[0] in preferred_assets:
+        return cycle
+    
+    for p in preferred_assets:
+        if p in cycle:
+            r=p
+            break
+    
+    if r=="":
+        return cycle
         
+    i = cycle.index(r)
+    return cycle[i:] + cycle[:i]
+        
+    
+           
     
 main()
