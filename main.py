@@ -1,10 +1,6 @@
-import audioop
-from calendar import c
-from typing import Tuple
 import ccxt
 import pprint as pp
 import networkx as nx
-import matplotlib.pyplot as plt
 
 def main():
 # setup
